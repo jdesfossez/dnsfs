@@ -1,0 +1,8 @@
+nsupdate -k Kdyn.XXX.key 
+zone dyn.example.net
+server ns.example.net
+update delete z.dyn.example.net
+update add z2.dyn.example.net  86400 A 172.16.1.1
+show
+send
+

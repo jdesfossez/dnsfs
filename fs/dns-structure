@@ -1,0 +1,79 @@
+AAAA records : 16 octets, 128 bits
+aaaa:bbbb:cccc:dddd:eeee:ffff:0000:1111
+
+name :
+any letter, numbers between 0 and 9, and the symbol "-"
+Length may vary, from 3 to 63 types.
+sub('.', "-dot-")
+. == /
+
+touch /a/b/c.txt --> add a.b.c-dot-txt.$ZONE
+
+
+data :
+2 first bytes : mode
+next 2 : uid
+next 2 : gid
+next 2 : name (hex on 4 digits)
+for directory : nlink = 2, size = 4096
+for file : nlink = 1, size = number used bytes (how many zeros in the beginning, max = 8)
+
+real data : eeee:ffff:0000:1111
+ascii in hex :
+salut = ::73:616c:7574
+
+mkdir /a (first directory, root:root:755) --> add 0.$ZONE  TTL AAAA 755:0:0:a::
+mkdir /b --> add 1.$ZONE  TTL AAAA 755:0:0:b::
+mkdir /a/c --> add 0.0.$ZONE TTL AAAA 755:0:0:c::
+mkdir /b/d --> add 1.0.$ZONE  TTL AAAA 755:0:0:d::
+mkdir /b/e --> add 1.1.$ZONE  TTL AAAA 755:0:0:e::
+mkdir /b/f --> add 1.2.$ZONE  TTL AAAA 755:0:0:f::
+
+rmdir /b/e --> del 1.1.$ZONE, mv 1.2.$ZONE -> 1.1.$ZONE
+
+echo salut > /a/ca (root:root:644)    -->    add 0.ffff.0.$ZONE TTL AAAA 	644:0:0:ca::73:616c:7574
+echo salut > /a/c/cb (root:root:644)  -->    add 0.0.ffff.0.$ZONE TTL AAAA 	644:0:0:cb::73:616c:7574
+echo salut > /b/f/cc (root:root:644)  -->    add 1.2.ffff.0.$ZONE TTL AAAA 	644:0:0:cc::73:616c:7574
+echo salut > /b/f/cd (root:root:644)  -->    add 1.2.ffff.1.$ZONE TTL AAAA 	644:0:0:cd::73:616c:7574
+
+mv /a/b/c.txt /a/b/d.txt -> dig a.b.c-dot-txt.$ZONE, del a.b.c-dot-txt.$ZONE, add a.b.d-dot-txt.$ZONE TTL AAAA 644:0:0::73:616c:7574
+
+ls -l /a/b/d.txt 
+-rw-r--r-- 1 root root 5 ? ? /a/b/d.txt
+
+ls / ::
+	inode = 0
+	entry = .
+	do
+		add(entry)
+		inode++
+	while entry = fetchFromDNS(cwd, inode)
+
+ls /b ::
+	cwd = /
+	inode = findInode(cwd, b)
+	entry = .
+	do
+add(entry)
+	inode++
+while entry = fetchFromDNS(cwd, inode)
+
+findInode(root, leaf):
+	inode = 0
+	do
+		fetchFromDNS(cwd, inode)
+	
+
+Dev Tree :
+/
+`-- a
+    |-- b
+    |   `-- c
+    |       `-- file.txt
+    `-- e
+        `-- zz
+            `-- aaa.txt
+
+a.b.c.file-dot-txt.$ZONE
+a.e.zz.aaa-dot-txt.$ZONE
+
